@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { Inject, Service } from "../../src";
+import { isInitializing } from "../../src/container/utils/isInitializing";
 
 describe("Service", () => {
   it("should not work when it does not have @Service annotation", () => {
@@ -18,6 +19,10 @@ describe("Service", () => {
   it("should work when service has @Service annotation", () => {
     expect(() => {
       const container = {};
+
+      if (isInitializing(container)) {
+        return;
+      }
 
       @Service(container)
       class TestService {}

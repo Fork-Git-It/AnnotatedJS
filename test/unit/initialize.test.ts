@@ -58,6 +58,26 @@ describe("initialize", () => {
     expect(spy).toHaveBeenCalled();
   });
 
+  it("initializing key is set on initialization", () => {
+    const container = {
+      [keys.routerClass]: Router,
+      [keys.router]: router,
+    };
+
+    initialize(container);
+
+    expect(container[keys.initializing]).toBe(true);
+  });
+
+  it("errors when container is initialized more than once", () => {
+    const container = {
+      [keys.routerClass]: Router,
+      [keys.router]: router,
+    };
+
+    expect(() => initialize({ [keys.initializing]: true })).toThrow();
+  });
+
   it("instantiates cache storage", () => {
     const spy = jest.fn();
 
@@ -76,6 +96,7 @@ describe("initialize", () => {
 
   it("instantiates in order", () => {
     const spy = jest.fn();
+
     class Config {
       constructor() {
         spy(this);

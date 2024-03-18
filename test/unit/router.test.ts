@@ -8,7 +8,7 @@ import {
   itExpectsAValidContainer,
   itHasInitializationHook,
   itSetsInjectablesOnInstance,
-  itThrowsErrorIfNotUsedOnAClass,
+  itThrowsErrorIfNotUsedOnAClass
 } from "./utils/classDecorators";
 
 describe("@Router", () => {

@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { keys } from "../../../src/container/keys";
 import { MetadataProperties } from "../../../src/decorators/inject/metadataProperties";
 import { Class, ClassDecorator } from "../../../src/decorators/types";
 
 export const initializerFor =
-  (classDef: Class<unknown>) => (initializer: () => void) =>
+  (classDef: Class<any>) => (initializer: () => void) =>
     initializer.call(classDef);
 
 const kind = "class";
@@ -12,7 +13,7 @@ const name = "name";
 class ExampleClass {}
 
 export const itExpectsAValidContainer = <T extends Class<any>>(
-  getClassDecorator: (container: Record<string, unknown>) => ClassDecorator<T>,
+  getClassDecorator: (container: Record<string, any>) => ClassDecorator<T>,
 ) =>
   it("expects a valid container", () => {
     // @ts-expect-error passing an invalid container
@@ -20,7 +21,7 @@ export const itExpectsAValidContainer = <T extends Class<any>>(
   });
 
 export const itThrowsErrorIfNotUsedOnAClass = <T extends Class<any>>(
-  getClassDecorator: (container: Record<string, unknown>) => ClassDecorator<T>,
+  getClassDecorator: (container: Record<string, any>) => ClassDecorator<T>,
 ) =>
   it("throws an error when not used on a class", () => {
     expect(() =>
@@ -32,7 +33,7 @@ export const itThrowsErrorIfNotUsedOnAClass = <T extends Class<any>>(
   });
 
 export const itHasInitializationHook = <T extends Class<any>>(
-  getClassDecorator: (container: Record<string, unknown>) => ClassDecorator<T>,
+  getClassDecorator: (container: Record<string, any>) => ClassDecorator<T>,
 ) =>
   it("has an initialization hook", () => {
     const spy = jest.fn();
@@ -51,26 +52,56 @@ export const itHasInitializationHook = <T extends Class<any>>(
     expect(spy).toHaveBeenCalledWith(expect.any(Function));
   });
 
-export const itCreatesClassInstanceInInitHook = <T extends Class<any>>(
-  getClassDecorator: (container: Record<string, unknown>) => ClassDecorator<T>,
+export const itDoesNotCreateClassIntanceBeforeInit = <T extends Class<any>>(
+  getClassDecorator: (container: Record<string, any>) => ClassDecorator<T>,
+  prefilledContainer?: Record<string, any>,
 ) =>
-  it("initialization hook to create instance of class", () => {
+  it("does not create class instance before initialization", () => {
     const spy = jest.fn();
 
-    getClassDecorator({})(
+    getClassDecorator(
+      Object.assign({}, prefilledContainer, { [keys.initializing]: false }),
+    )(
       // @ts-expect-error Class type is too broad for anonymous class
       class {},
       {
         kind,
         name,
-        addInitializer: jest.fn(
-          initializerFor(
-            class {
-              constructor() {
-                spy();
-              }
-            },
-          ),
+        addInitializer: initializerFor(
+          class {
+            constructor() {
+              spy();
+            }
+          },
+        ),
+        metadata: {},
+      },
+    );
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+export const itCreatesClassInstanceInInitHook = <T extends Class<any>>(
+  getClassDecorator: (container: Record<string, any>) => ClassDecorator<T>,
+  prefilledContainer?: Record<string, any>,
+) =>
+  it("initialization hook to create instance of class", () => {
+    const spy = jest.fn();
+
+    getClassDecorator(
+      Object.assign({}, prefilledContainer, { [keys.initializing]: true }),
+    )(
+      // @ts-expect-error Class type is too broad for anonymous class
+      class {},
+      {
+        kind,
+        name,
+        addInitializer: initializerFor(
+          class {
+            constructor() {
+              spy();
+            }
+          },
         ),
         metadata: {},
       },
@@ -79,17 +110,43 @@ export const itCreatesClassInstanceInInitHook = <T extends Class<any>>(
     expect(spy).toHaveBeenCalled();
   });
 
+export const itDoesNotSetInjectablesBeforeInit = <T extends Class<any>>(
+  getClassDecorator: (container: Record<string, any>) => ClassDecorator<T>,
+  prefilledContainer?: Record<string, any>,
+) =>
+  it("does not set injectables before initialization", () => {
+    const set = jest.fn();
+    class ExampleClass {}
+
+    getClassDecorator(
+      Object.assign({}, prefilledContainer, { [keys.initializing]: false }),
+    )(
+      // @ts-expect-error Class type is too broad for anonymous class
+      class {},
+      {
+        kind,
+        name,
+        addInitializer: initializerFor(ExampleClass),
+        metadata: {
+          [MetadataProperties.injectables]: [{ key: "key", set }],
+        },
+      },
+    );
+
+    expect(set).not.toHaveBeenCalled();
+  });
+
 export const itSetsInjectablesOnInstance = <T extends Class<any>>(
-  getClassDecorator: (container: Record<string, unknown>) => ClassDecorator<T>,
+  getClassDecorator: (container: Record<string, any>) => ClassDecorator<T>,
 ) =>
   it("sets injectables on class instance", () => {
     const key = "key";
     const value = null;
-    const container = { [key]: value };
 
     const set = jest.fn();
+    class ExampleClass {}
 
-    getClassDecorator(container)(
+    getClassDecorator({ [key]: value, [keys.initializing]: true })(
       // @ts-expect-error Class type is too broad for anonymous class
       class {},
       {
@@ -106,7 +163,7 @@ export const itSetsInjectablesOnInstance = <T extends Class<any>>(
   });
 
 export const itAddsClassToArrayInContainer = <T extends Class<any>>(
-  getClassDecorator: (container: Record<string, unknown>) => ClassDecorator<T>,
+  getClassDecorator: (container: Record<string, any>) => ClassDecorator<T>,
   key: string,
 ) =>
   it("adds class to array in container", () => {
@@ -117,7 +174,7 @@ export const itAddsClassToArrayInContainer = <T extends Class<any>>(
       class {},
       {
         kind,
-        name: "name",
+        name,
         addInitializer: () => {},
         metadata: {},
       },
@@ -129,7 +186,7 @@ export const itAddsClassToArrayInContainer = <T extends Class<any>>(
   });
 
 export const itAddsClassToContainer = <T extends Class<any>>(
-  getClassDecorator: (container: Record<string, unknown>) => ClassDecorator<T>,
+  getClassDecorator: (container: Record<string, any>) => ClassDecorator<T>,
   key: string,
 ) =>
   it("adds class to container", () => {
@@ -150,7 +207,7 @@ export const itAddsClassToContainer = <T extends Class<any>>(
   });
 
 export const itAddsClassToContainerOnlyOnce = <T extends Class<any>>(
-  getClassDecorator: (container: Record<string, unknown>) => ClassDecorator<T>,
+  getClassDecorator: (container: Record<string, any>) => ClassDecorator<T>,
 ) =>
   it("adds class to container only once", () => {
     const container = {};
@@ -179,11 +236,11 @@ export const itAddsClassToContainerOnlyOnce = <T extends Class<any>>(
 
 export const itAddsClassInstanceToContainerOnInit = <T extends Class<any>>(
   name: string,
-  getClassDecorator: (container: Record<string, Array<T>>) => ClassDecorator<T>,
+  getClassDecorator: (container: Record<string, any>) => ClassDecorator<T>,
   key: string,
 ) =>
   it("adds class instance to container when initialized", () => {
-    const container = {};
+    const container = { [keys.initializing]: true };
 
     getClassDecorator(container)(
       // @ts-expect-error Class type is too broad for anonymous class
@@ -197,6 +254,28 @@ export const itAddsClassInstanceToContainerOnInit = <T extends Class<any>>(
     );
 
     expect(container[key]).toStrictEqual(expect.any(ExampleClass));
+  });
+
+export const itDoesNotAddClassInstanceBeforeInit = <T extends Class<any>>(
+  name: string,
+  getClassDecorator: (container: Record<string, any>) => ClassDecorator<T>,
+  key: string,
+) =>
+  it("does not add class instance to container before initialization", () => {
+    const container = {};
+
+    getClassDecorator(container)(
+      // @ts-expect-error Class type is too broad for anonymous class
+      class {},
+      {
+        kind,
+        name,
+        addInitializer: initializerFor(class {}),
+        metadata: {},
+      },
+    );
+
+    expect(container[key]).not.toBeDefined();
   });
 
 export const itThrowsWhenUsedOnAnUnnamedClass = <T extends Class<any>>(

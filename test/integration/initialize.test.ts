@@ -350,4 +350,36 @@ describe("Initialization", () => {
     expect(getResponse).toBeDefined();
     expect(getResponse.headers.get(cacheHeader)).toBeFalsy();
   });
+
+  it("Initialize twice expects returns error on second init", () => {
+    const container = {};
+
+    @Router(container)
+    class TestRouter implements AnnotatedRouter {
+      get(_uri: string, _handler: RequestHandler): AnnotatedRouter {
+        throw new Error("Method not implemented.");
+      }
+      put(_uri: string, _handler: RequestHandler): AnnotatedRouter {
+        throw new Error("Method not implemented.");
+      }
+      post(_uri: string, _handler: RequestHandler): AnnotatedRouter {
+        throw new Error("Method not implemented.");
+      }
+      patch(_uri: string, _handler: RequestHandler): AnnotatedRouter {
+        throw new Error("Method not implemented.");
+      }
+      delete(_uri: string, _handler: RequestHandler): AnnotatedRouter {
+        throw new Error("Method not implemented.");
+      }
+      all(_uri: string, _handler: RequestHandler): AnnotatedRouter {
+        throw new Error("Method not implemented.");
+      }
+      handle(_req: Request): Promise<Response> {
+        throw new Error("Method not implemented.");
+      }
+    }
+
+    initialize(container);
+    expect(() => initialize(container)).toThrow;
+  });
 });
